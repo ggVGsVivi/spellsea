@@ -28,6 +28,7 @@ local abilityTypes = {
     [1] = "ja",
     [2] = "pet",
     [3] = "ws",
+    [18] = "pet",
 }
 
 local invokeButton = 0xba -- hardcoded to ';'
@@ -78,9 +79,9 @@ function getAllAbilities ()
 end
 
 function refreshAbilities ()
-    if cacheCheck() then
-        return
-    end
+    --if cacheCheck() then
+    --    return
+    --end
     abilities = {}
     local player = AshitaCore:GetMemoryManager():GetPlayer()
     for i = 1, #allAbilities do
@@ -119,7 +120,7 @@ function getTargetMode (abt)
     -- 011101 = protect (friendlies? + alliance? + party + self)
     -- 100000 = fire (enemy)
     -- 000101 = sneak (party + self)
-    if abt.targets == 1 then
+    if abt.targets >= 1 and abt.targets < 4 then
         return "<me>"
     elseif abt.targets == 32 then
         return "<stnpc>"
@@ -204,7 +205,6 @@ ashita.events.register("d3d_present", "present_callback1", function ()
         bit.bor(
             ImGuiWindowFlags_NoDecoration,
             ImGuiWindowFlags_AlwaysAutoResize,
-            ImGuiWindowFlags_NoSavedSettings,
             ImGuiWindowFlags_NoFocusOnAppearing,
             ImGuiWindowFlags_NoNav
         )
