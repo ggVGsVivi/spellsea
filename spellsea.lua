@@ -5,7 +5,9 @@ addon.desc = "An addon to relatively quickly use any ability/spell without text 
 addon.link = ""
 
 local ffi = require("ffi")
-local imgui = require('imgui')
+local imgui = require("imgui")
+
+require("direct")
 
 -- both abilities and spells are in abilities cause i said so
 local allAbilities = {}
@@ -15,41 +17,12 @@ local filteredAbilities = {}
 local typing = false
 local searchTerm = ""
 
--- problem is that with only checking a cache like this, spells might not appear after using a scroll
--- if that happens go switch jobs or reload the addon or something idk
-local playerCache = {
-    mj = 0,
-    mjLevel = 0,
-    sj = 0,
-    sjLevel = 0,
-}
-
 local abilityTypes = {
     [1] = "ja",
     [2] = "pet",
     [3] = "ws",
     [18] = "pet",
 }
-
-local invokeButton = 0xba -- hardcoded to ';'
-
-function cacheCheck ()
-    local player = AshitaCore:GetMemoryManager():GetPlayer()
-    if (not player:HasAbilityData()) or (not player:HasSpellData()) then
-        return true
-    end
-    if player:GetMainJob() == playerCache.mj
-    and player:GetMainJobLevel() == playerCache.mjLevel
-    and player:GetSubJob() == playerCache.sj
-    and player:GetSubJobLevel() == playerCache.sjLevel then
-        return true
-    end
-    playerCache.mj = player:GetMainJob()
-    playerCache.mjLevel = player:GetMainJobLevel()
-    playerCache.sj = player:GetSubJob()
-    playerCache.sjLevel = player:GetSubJobLevel()
-    return false
-end
 
 function getAllAbilities ()
     allAbilities = {}
@@ -79,9 +52,6 @@ function getAllAbilities ()
 end
 
 function refreshAbilities ()
-    --if cacheCheck() then
-    --    return
-    --end
     abilities = {}
     local player = AshitaCore:GetMemoryManager():GetPlayer()
     for i = 1, #allAbilities do
@@ -143,16 +113,36 @@ function executeCommand (n)
     typing = false
 end
 
-ashita.events.register("key", "key_callback1", function (e)
-    if typing then
-        e.blocked = true
+local keyMap = {}
+keyMap[0x1b] = function (k) -- Esc = exit
+    typing = false
+end
+for i = 0x30, 0x39 do -- 0..9
+    keyMap[i] = function (k)
+        local c = string.char(k):lower()
+        executeCommand(tonumber(c))
     end
-    if e.lparam >= 2^31 then -- sin
-        return
+end
+keyMap[0x0d] = function (k) -- Enter = 1
+    executeCommand(1)
+end
+for i = 0x41, 0x5a do -- a..z
+    keyMap[i] = function (k)
+        local c = string.char(k):lower()
+        searchTerm = searchTerm .. c
+        updateFilter(filteredAbilities)
     end
-    local c = string.char(e.wparam):lower()
-    if not typing then
-        if e.wparam == invokeButton then
+end
+keyMap[0x08] = function (k)  -- Backspace
+    searchTerm = searchTerm:sub(1, searchTerm:len() - 1)
+    updateFilter(abilities)
+end
+
+ashita.events.register("command", "command_callback1", function (e)
+    if (e.command == "/spellsea") then
+        if typing then
+            typing = false
+        else
             typing = true
             searchTerm = ""
             refreshAbilities()
@@ -160,27 +150,26 @@ ashita.events.register("key", "key_callback1", function (e)
                 filteredAbilities[i] = abilities[i]
             end
         end
+        e.blocked = true;
+    end
+end)
+
+ashita.events.register("key", "key_callback1", function (e)
+    if e.lparam >= 2^31 then -- sin
         return
     end
-    if e.wparam == invokeButton or e.wparam == 0x1b then
-        typing = false
-    elseif e.wparam >= 0x30 and e.wparam <= 0x39 then --0..9
-        executeCommand(tonumber(c))
-    elseif e.wparam == 0x0d then -- enter = 1
-        -- also seems to instantly start casting, wasn't even planning to do that but i'll pretend it's an intended feature
-        executeCommand(1)
-    elseif e.wparam >= 0x41 and e.wparam <= 0x5a then --a..z
-        searchTerm = searchTerm .. c
-        updateFilter(filteredAbilities)
-    elseif e.wparam == 0x08 then
-        searchTerm = searchTerm:sub(1, searchTerm:len() - 1)
-        updateFilter(abilities)
+    if keyMap[e.wparam] then
+        e.blocked = true
+        keyMap[e.wparam](e.wparam)
     end
 end)
 
 ashita.events.register("key_data", "key_data_callback1", function (e)
     if typing then
-        e.blocked = true
+        local t = translate(e.key)
+        if t:len() == 1 and keyMap[t:byte()] then
+            e.blocked = true
+        end
     end
 end)
 
@@ -188,7 +177,10 @@ ashita.events.register("key_state", "key_state_callback1", function (e)
     local ptr = ffi.cast("uint8_t*", e.data_raw)
     if typing then
         for i = 1, 256 do -- i'm honestly just guessing that there's 256 of these
-            ptr[i] = 0
+            local t = translate(i)
+            if t and t:len() == 1 and keyMap[t:byte()] then
+                ptr[i] = 0
+            end
         end
     end
 end)

@@ -1,9 +1,8 @@
 A FFXI Ashita addon to relatively quickly use any ability/spell without text commands or menuing.
 
-Pressing ';' opens the input window.
+Use the command /spellsea (you'll probably want to /bind it to a key) to open or close the input window.
 While it's open, you can type a search term and use a listed action by pressing keys '1'-'0'.
 This will perform the action's ja/pet/ws/ma command with a context-specific target select.
 
-To cancel, press ';' again or Esc.
-
-Pressing Enter will pick the top-most action and instantly cast it, because that's how Enter works.
+Press Esc to cancel.
+Press Enter to pick the top-most action and instantly cast it, because that's how Enter works.
