@@ -1,6 +1,6 @@
 addon.name = "spellsea"
 addon.author = "ggVGsVivi"
-addon.version = "1.0"
+addon.version = "1.1"
 addon.desc = "An addon to relatively quickly use any ability/spell without text commands or menuing."
 addon.link = ""
 
@@ -167,7 +167,7 @@ end)
 ashita.events.register("key_data", "key_data_callback1", function (e)
     if typing then
         local t = translate(e.key)
-        if t:len() == 1 and keyMap[t:byte()] then
+        if t and keyMap[t] then
             e.blocked = true
         end
     end
@@ -178,7 +178,7 @@ ashita.events.register("key_state", "key_state_callback1", function (e)
     if typing then
         for i = 1, 256 do -- i'm honestly just guessing that there's 256 of these
             local t = translate(i)
-            if t and t:len() == 1 and keyMap[t:byte()] then
+            if t and keyMap[t] then
                 ptr[i] = 0
             end
         end
