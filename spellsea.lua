@@ -159,7 +159,9 @@ ashita.events.register("key", "key_callback1", function (e)
         return
     end
     if keyMap[e.wparam] then
-        e.blocked = true
+        if e.wparam ~= 0x1b then
+            e.blocked = true
+        end
         keyMap[e.wparam](e.wparam)
     end
 end)
@@ -167,7 +169,7 @@ end)
 ashita.events.register("key_data", "key_data_callback1", function (e)
     if typing then
         local t = translate(e.key)
-        if t and keyMap[t] then
+        if t and keyMap[t] and t ~= 0x1b then
             e.blocked = true
         end
     end
@@ -178,7 +180,7 @@ ashita.events.register("key_state", "key_state_callback1", function (e)
     if typing then
         for i = 1, 256 do -- i'm honestly just guessing that there's 256 of these
             local t = translate(i)
-            if t and keyMap[t] then
+            if t and keyMap[t] and t ~= 0x1b then
                 ptr[i] = 0
             end
         end
