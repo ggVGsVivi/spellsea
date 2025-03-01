@@ -32,7 +32,7 @@ function getAllAbilities ()
             allAbilities[#allAbilities + 1] = {
                 id = id,
                 name = abt.Name[3],
-                sname = abt.Name[3]:lower():gsub("%s+", ""),
+                sname = abt.Name[3]:lower():gsub("%s+", ""):gsub("%W",""),
                 cmd = abilityTypes[abt.Type],
                 targets = abt.Targets,
             }
@@ -42,7 +42,7 @@ function getAllAbilities ()
             allAbilities[#allAbilities + 1] = {
                 id = id + 10000, -- 10k just to be sure
                 name = spl.Name[3],
-                sname = spl.Name[3]:lower():gsub("%s+", ""),
+                sname = spl.Name[3]:lower():gsub("%s+", ""):gsub("%W",""),
                 cmd = "ma",
                 targets = spl.Targets,
             }
