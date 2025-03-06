@@ -11,7 +11,6 @@ require("direct")
 
 -- both abilities and spells are in abilities cause i said so
 local allAbilities = {}
-local abilities = {}
 local filteredAbilities = {}
 
 local typing = false
@@ -28,7 +27,7 @@ function getAllAbilities ()
     allAbilities = {}
     for id = 0, 2048 do  -- crime against all that is holy
         local abt = AshitaCore:GetResourceManager():GetAbilityById(id)
-        if abt and abt.Type ~= 4 then -- 4 = trait
+        if abt and abilityTypes[abt.Type] then
             allAbilities[#allAbilities + 1] = {
                 id = id,
                 name = abt.Name[3],
@@ -51,38 +50,32 @@ function getAllAbilities ()
     table.sort(allAbilities, function (x, y) return x.name < y.name end)
 end
 
-function refreshAbilities ()
+function shownAbilities ()
     abilities = {}
     local player = AshitaCore:GetMemoryManager():GetPlayer()
-    for i = 1, #allAbilities do
-        local abt = allAbilities[i]
-        if player:HasWeaponSkill(abt.id) then
-            abilities[#abilities + 1] = abt
-        elseif player:HasPetCommand(abt.id) then
-            abilities[#abilities + 1] = abt
-        elseif player:HasAbility(abt.id) then
-            abilities[#abilities + 1] = abt
-        elseif player:HasSpell(abt.id - 10000) then
-            local spl = AshitaCore:GetResourceManager():GetSpellById(abt.id - 10000)
-            local mjReq = spl.LevelRequired[player:GetMainJob() + 1]
-            local sjReq = spl.LevelRequired[player:GetSubJob() + 1]
-            if (mjReq ~= -1 and mjReq <= player:GetMainJobLevel())
-            or (sjReq ~= -1 and sjReq <= player:GetSubJobLevel()) then
+    for id, abt in pairs(allAbilities) do
+        if abt.sname:find(searchTerm) then
+            if player:HasWeaponSkill(abt.id) then
                 abilities[#abilities + 1] = abt
+            elseif player:HasPetCommand(abt.id) then
+                abilities[#abilities + 1] = abt
+            elseif player:HasAbility(abt.id) then
+                abilities[#abilities + 1] = abt
+            elseif player:HasSpell(abt.id - 10000) then
+                local spl = AshitaCore:GetResourceManager():GetSpellById(abt.id - 10000)
+                local mjReq = spl.LevelRequired[player:GetMainJob() + 1]
+                local sjReq = spl.LevelRequired[player:GetSubJob() + 1]
+                if (mjReq ~= -1 and mjReq <= player:GetMainJobLevel())
+                or (sjReq ~= -1 and sjReq <= player:GetSubJobLevel()) then
+                    abilities[#abilities + 1] = abt
+                end
             end
         end
-    end
-end
-
-function updateFilter (toFilter)
-    local newFiltered = {}
-    for i = 1, #toFilter do
-        local abt = toFilter[i]
-        if abt.sname:find(searchTerm) then
-            newFiltered[#newFiltered + 1] = abt
+        if #abilities >= 10 then
+            break
         end
     end
-    filteredAbilities = newFiltered
+    return abilities
 end
 
 function getTargetMode (abt)
@@ -130,12 +123,15 @@ for i = 0x41, 0x5a do -- a..z
     keyMap[i] = function (k)
         local c = string.char(k):lower()
         searchTerm = searchTerm .. c
-        updateFilter(filteredAbilities)
+        filteredAbilities = shownAbilities()
     end
 end
 keyMap[0x08] = function (k)  -- Backspace
+    if searchTerm == "" then
+        return
+    end
     searchTerm = searchTerm:sub(1, searchTerm:len() - 1)
-    updateFilter(abilities)
+    filteredAbilities = shownAbilities()
 end
 
 ashita.events.register("command", "command_callback1", function (e)
@@ -145,12 +141,9 @@ ashita.events.register("command", "command_callback1", function (e)
         else
             typing = true
             searchTerm = ""
-            refreshAbilities()
-            for i = 1, #abilities do
-                filteredAbilities[i] = abilities[i]
-            end
+            filteredAbilities = shownAbilities()
         end
-        e.blocked = true;
+        e.blocked = true
     end
 end)
 
@@ -219,5 +212,4 @@ end)
 
 ashita.events.register("load", "load_callback1", function ()
     getAllAbilities()
-    refreshAbilities()
 end)
