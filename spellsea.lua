@@ -15,6 +15,7 @@ local filteredAbilities = {}
 
 local typing = false
 local searchTerm = ""
+local history = {}
 
 local abilityTypes = {
     [1] = "ja",
@@ -99,11 +100,18 @@ end
 function executeCommand (n)
     if n == 0 then n = 10 end
     local abt = filteredAbilities[n]
+    if searchTerm == "" then
+        abt = history[n]
+    end
     if abt then
         local command = "/" .. abt.cmd .. " \"" .. abt.name .. "\" " .. getTargetMode(abt)
         AshitaCore:GetChatManager():QueueCommand(-1, command)
+        typing = false
+        if searchTerm ~= "" then
+            history[10] = nil
+            table.insert(history, 1, abt)
+        end
     end
-    typing = false
 end
 
 local keyMap = {}
@@ -199,12 +207,15 @@ ashita.events.register("d3d_present", "present_callback1", function ()
         imgui.Text(searchTerm)
         imgui.Separator()
         for i = 1, 10 do
-            if i > #filteredAbilities then
-                break
+            local abt = filteredAbilities[i]
+            if searchTerm == "" then
+                abt = history[i]
             end
-            local si = i
-            if si == 10 then si = 0 end
-            imgui.Text(si .. "   " .. filteredAbilities[i].name)
+            if abt then
+                local si = i
+                if si == 10 then si = 0 end
+                imgui.Text(si .. "   " .. abt.name)
+            end
         end
     end
     imgui.End()
