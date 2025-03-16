@@ -107,10 +107,15 @@ function executeCommand (n)
         local command = "/" .. abt.cmd .. " \"" .. abt.name .. "\" " .. getTargetMode(abt)
         AshitaCore:GetChatManager():QueueCommand(-1, command)
         typing = false
-        if searchTerm ~= "" then
-            history[10] = nil
-            table.insert(history, 1, abt)
+        local toRemove = 10
+        for i, hAbt in pairs(history) do
+            if abt == hAbt then
+                toRemove = i
+                break
+            end
         end
+        table.remove(history, toRemove)
+        table.insert(history, 1, abt)
     end
 end
 
@@ -156,21 +161,26 @@ ashita.events.register("command", "command_callback1", function (e)
 end)
 
 ashita.events.register("key", "key_callback1", function (e)
-    if e.lparam >= 2^31 then -- sin
-        return
-    end
-    if keyMap[e.wparam] then
-        if e.wparam ~= 0x1b then
+    if typing then
+        if e.lparam >= 2^31 then -- sin
+            return
+        end
+        if keyMap[e.wparam] then
+            if e.wparam ~= 0x1b then
+                keyMap[e.wparam](e.wparam)
+            end
             e.blocked = true
         end
-        keyMap[e.wparam](e.wparam)
     end
 end)
 
 ashita.events.register("key_data", "key_data_callback1", function (e)
     if typing then
         local t = translate(e.key)
-        if t and keyMap[t] and t ~= 0x1b then
+        if t and keyMap[t] then
+            if t == 0x1b then
+                keyMap[t](t)
+            end
             e.blocked = true
         end
     end
@@ -181,7 +191,7 @@ ashita.events.register("key_state", "key_state_callback1", function (e)
     if typing then
         for i = 1, 256 do -- i'm honestly just guessing that there's 256 of these
             local t = translate(i)
-            if t and keyMap[t] and t ~= 0x1b then
+            if t and keyMap[t] then
                 ptr[i] = 0
             end
         end
