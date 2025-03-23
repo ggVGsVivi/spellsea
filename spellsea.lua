@@ -21,6 +21,7 @@ local abilityTypes = {
     [1] = "ja",
     [2] = "pet",
     [3] = "ws",
+    [6] = "pet",
     [10] = "pet",
     [18] = "pet",
 }
@@ -29,6 +30,7 @@ function getAllAbilities ()
     allAbilities = {}
     for id = 0, 2048 do  -- crime against all that is holy
         local abt = AshitaCore:GetResourceManager():GetAbilityById(id)
+        --if abt and string.find(abt.Name[3], "Poison Nails") then print(abt.Type) end
         if abt and abilityTypes[abt.Type] then
             allAbilities[#allAbilities + 1] = {
                 id = id,
