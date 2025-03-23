@@ -21,6 +21,7 @@ local abilityTypes = {
     [1] = "ja",
     [2] = "pet",
     [3] = "ws",
+    [10] = "pet",
     [18] = "pet",
 }
 
